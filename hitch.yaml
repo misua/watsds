@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hitch-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hitch
+  template:
+    metadata:
+      labels:
+        app: hitch
+    spec:
+      containers:
+      - name: hitch
+        image: hitch:latest
+        ports:
+        - containerPort: 443
+        volumeMounts:
+        - name: config-volume
+          mountPath: /usr/local/etc/hitch
+      volumes:
+      - name: config-volume
+        configMap:
+          name: hitch-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hitch-service
+spec:
+  selector:
+    app: hitch
+  ports:
+  - protocol: TCP
+    port: 443
+    targetPort: 443

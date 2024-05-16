@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: varnish-config
+data:
+  default.vcl: |
+    vcl 4.0;
+
+    backend default {
+        .host = "nginx-service";  // This points to the Nginx service name
+        .port = "80";
+    }
+
+    sub vcl_recv {
+        # Handle incoming requests
+        if (req.url ~ "\.(png|gif|jpeg|jpg|ico|svg|css|js|woff|woff2|ttf|otf)$") {
+            unset req.http.Cookie;
+        }
+
+        # Check for specific cookie and bypass cache
+        if (req.http.Cookie ~ "(UserID|session)") {
+            return (pass);
+        }
+    }
+
+    sub vcl_backend_response {
+        # Example: Add a Set-Cookie header in the response
+        set beresp.http.Set-Cookie = "Logged-In=True; Max-Age=3600; Path=/";
+    }
+
+    sub vcl_deliver {
+        # Modify cookies before they are sent to the client
+        if (resp.http.Set-Cookie) {
+            set resp.http.Set-Cookie = regsub(resp.http.Set-Cookie, "Domain=example.com;", "");
+        }
+    }
